@@ -16,7 +16,7 @@ public class PlayerController : MonoBehaviour
     public float sensitivity=0.1f;
 
     public float jumpPower;
-    private LayerMask groundLayer;
+    public LayerMask groundLayer;
 
     public bool canLook;
 
@@ -46,7 +46,10 @@ public class PlayerController : MonoBehaviour
 
     private void Move()
     {
-        Vector3 moveDir = new Vector3(dir.x*speed, rb.velocity.y, dir.y*speed);
+        Vector3 moveDir = Vector3.forward * dir.y + Vector3.right * dir.x;
+        //001 + 100 == 101
+        moveDir *= speed;
+        moveDir.y = rb.velocity.y;
         rb.velocity = moveDir;
     }
 
@@ -65,6 +68,11 @@ public class PlayerController : MonoBehaviour
         {
             dir = context.ReadValue<Vector2>();
         }
+
+        if(context.phase == InputActionPhase.Canceled)
+        {
+            dir = Vector2.zero;
+        }
     }
 
     public void OnLook(InputAction.CallbackContext context)
@@ -76,7 +84,7 @@ public class PlayerController : MonoBehaviour
     {
         if(context.phase == InputActionPhase.Started && IsGrounded())
         {
-            rb.AddForce(Vector3.up,ForceMode.Impulse);
+            rb.AddForce(Vector3.up*jumpPower,ForceMode.Impulse);
         }
     }
 
@@ -84,16 +92,18 @@ public class PlayerController : MonoBehaviour
     {
         Ray[] rays = new Ray[4]
         {
-            new Ray(transform.position +(transform.forward*jumpPower)+(transform.up*jumpPower),Vector3.down),
-            new Ray(transform.position +(transform.forward*jumpPower)+(-transform.up*jumpPower),Vector3.down),
-            new Ray(transform.position +(-transform.forward * jumpPower)+(transform.up * jumpPower),Vector3.down),
-            new Ray(transform.position +(-transform.forward * jumpPower)+(-transform.up * jumpPower),Vector3.down)
+            new Ray(transform.position +(transform.forward*0.2f)+(transform.up*0.2f),Vector3.down),
+            new Ray(transform.position +(transform.forward*0.2f)+(-transform.up*jumpPower*0.2f),Vector3.down),
+            new Ray(transform.position +(-transform.forward * 0.2f) +(transform.forward * 0.2f),Vector3.down),
+            new Ray(transform.position +(-transform.forward * 0.2f) +(-transform.forward * 0.2f),Vector3.down)
         };//대상위치에서 살짝 앞과 위 방향은 아래 
 
         for(int i = 0; i < rays.Length; i++)
         {
-            if (Physics.Raycast(rays[i], 0.2f, groundLayer)) //Ray가 지면레이어와 닿았을시 true를 반환하여 점프가 가능하도록 한다.
+            if (Physics.Raycast(rays[i], 0.2f, groundLayer))
+            {
                 return true;
+            } //Ray가 지면레이어와 닿았을시 true를 반환하여 점프가 가능하도록 한다. 
         }
         return false;
     }
